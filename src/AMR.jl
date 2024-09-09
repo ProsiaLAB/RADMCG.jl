@@ -229,10 +229,125 @@ function amr_initialize(
     nny = ny
     nnz = nz
 
-    println(amr_finegrid_xi, amr_finegrid_xc)
+    if amr_tree_present
+        for ilevel = 1:level_max
+            if include_x
+                for ix = 1:(nnx+1)
+                    amr_finegrid_xi[2*(ix-1)+1, 1, ilevel+1] = amr_finegrid_xi[ix, 1, ilevel]
+                end
+                for ix = 1:nnx
+                    dx = (amr_finegrid_xi[ix+1, 1, ilevel] - amr_finegrid_xi[ix, 1, ilevel]) / 2
+                end
+                nnx = 2 * nnx
+            else
+                if nnx != 1
+                    throw(ArgumentError("nnx must be 1 if include_x is false"))
+                end
+                amr_finegrid_xi[1, 1, ilevel+1] = amr_finegrid_xi[1, 1, ilevel]
+                amr_finegrid_xi[2, 1, ilevel+1] = amr_finegrid_xi[2, 1, ilevel]
+            end
+            if include_y
+                for iy = 1:(nny+1)
+                    amr_finegrid_xi[2*(iy-1)+1, 2, ilevel+1] = amr_finegrid_xi[iy, 2, ilevel]
+                end
+                for iy = 1:nny
+                    dy = (amr_finegrid_xi[iy+1, 2, ilevel] - amr_finegrid_xi[iy, 2, ilevel]) / 2
+                end
+                nny = 2 * nny
+            else
+                if nny != 1
+                    throw(ArgumentError("nny must be 1 if include_y is false"))
+                end
+                amr_finegrid_xi[1, 2, ilevel+1] = amr_finegrid_xi[1, 2, ilevel]
+                amr_finegrid_xi[2, 2, ilevel+1] = amr_finegrid_xi[2, 2, ilevel]
+            end
+            if include_z
+                for iz = 1:(nnz+1)
+                    amr_finegrid_xi[2*(iz-1)+1, 3, ilevel+1] = amr_finegrid_xi[iz, 3, ilevel]
+                end
+                for iz = 1:nnz
+                    dz = (amr_finegrid_xi[iz+1, 3, ilevel] - amr_finegrid_xi[iz, 3, ilevel]) / 2
+                end
+                nnz = 2 * nnz
+            else
+                if nnz != 1
+                    throw(ArgumentError("nnz must be 1 if include_z is false"))
+                end
+                amr_finegrid_xi[1, 3, ilevel+1] = amr_finegrid_xi[1, 3, ilevel]
+                amr_finegrid_xi[2, 3, ilevel+1] = amr_finegrid_xi[2, 3, ilevel]
+            end
+            for ix = 1:nnx
+                amr_finegrid_xc[ix, 1, ilevel+1] = 0.5 * (
+                    amr_finegrid_xi[2*ix-1, 1, ilevel+1] + amr_finegrid_xi[2*ix, 1, ilevel+1]
+                )
+            end
+            for iy = 1:nny
+                amr_finegrid_xc[iy, 2, ilevel+1] = 0.5 * (
+                    amr_finegrid_xi[2*iy-1, 2, ilevel+1] + amr_finegrid_xi[2*iy, 2, ilevel+1]
+                )
+            end
+            for iz = 1:nnz
+                amr_finegrid_xc[iz, 3, ilevel+1] = 0.5 * (
+                    amr_finegrid_xi[2*iz-1, 3, ilevel+1] + amr_finegrid_xi[2*iz, 3, ilevel+1]
+                )
+            end
+        end
+    end
+
+
+    if amr_tree_present
+        slot = Array{Int,1}(undef, 3)
+        if fill_base_grid == 1
+            for iz = 1:amr_grid_nz
+                for iy = 1:amr_grid_ny
+                    for ix = 1:amr_grid_nx
+                        slot[1] = ix
+                        slot[2] = iy
+                        slot[3] = iz
+                        amr_branch_construct(slot)
+                    end
+                end
+            end
+        end
+    end
 
 
 end
+
+
+function amr_branch_construct(
+    a::AMRBranch,
+    b::AMRBranch,
+    slot::Array{Int,1},
+    amr_nrleaves::Int,
+    amr_nrbranches::Int,
+    amr_last_branch_id::Int
+)
+    amr_nrbranches = amr_nrbranches + 1
+    amr_last_branch_id = amr_last_branch_id + 1
+
+    a.id = amr_last_branch_id
+    a.leaf = true
+
+    amr_nrleaves = amr_nrleaves + 1
+
+    if amr_use_index
+        index = amr_assign_branch_index()
+        a.branch_index = index
+        index = amr_assign_leaf_index()
+        a.leaf_index = index
+    end
+
+    a.child = Nothing
+
+    a.parent = b
+    b.child[slot[1], slot[2], slot[3]] = a
+    # TODO: Well that's it. First roadblock. 
+    # We will not be using any pointer hackery in Julia.
+    # I will pass the whole fat structs around. Fuck it.
+    # God I miss C.
+end
+
 
 # Define a monotonically increasing xi, yi, zi
 xi = collect(range(0, stop=1, length=6))
