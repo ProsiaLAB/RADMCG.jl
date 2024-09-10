@@ -1,0 +1,34 @@
+mutable struct MonteCarloParams
+    nphot_therm::Int
+    nphot_scat::Int
+    nphot_spec::Int
+    nphot_mono::Int
+    ifast::Int
+    iranfreqmode::Int
+    enthreshold::Float64
+    irestart::Int
+    cntdump::Int
+    ntemp::Int
+    itempdecoup::Int
+    temp0::Float64
+    temp1::Float64
+    extinct_threshold::Float64
+    niter_vstruct::Int
+    vserrtol::Float64
+    ivstrt::Int
+    nphotdiff::Int
+    errtoldiff::Float64
+    count_write::Int
+    optimized_motion::Bool
+    optim_dtau::Float64
+    mod_random_walk::Bool
+    mrw_count_trigger::Int
+    mrw_db_ntemp::Int
+    mrw_db_temp0::Float64
+    mrw_db_temp1::Float64
+    mrw_enthres::Float64
+    mrw_tauthres::Float64
+    mrw_gamma::Float64
+    mrw_taustepback::Float64
+    mrw_tempthres::Float64
+end
