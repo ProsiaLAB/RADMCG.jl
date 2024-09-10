@@ -1,14 +1,36 @@
+include("Constants.jl")
+include("Utils.jl")
+
+
+
 mutable struct AMRBranch
     level::Int
     id::Int
     branch_index::Int
     leaf_index::Int
     leaf::Bool
-    neighbor::Array{Int,2}
-    child::Array{Int,3}
-    parent::AMRBranch
+    neighbor::Array{AMRBranch,2}
+    child::Array{AMRBranch,3}
+    parent::Union{AMRBranch,Nothing}
     parent_slot::Array{Int,1}
-    ixyz::Array{Int,1}
+    ixyzf::Array{Int,1}
+
+    # Constructor
+    function AMRBranch(
+        level::Int,
+        id::Int,
+        branch_index::Int=0,
+        leaf_index::Int=0,
+        leaf::Bool=false,
+        parent::Union{AMRBranch,Nothing}=nothing,
+        parent_slot::Array{Int,1}=[0, 0, 0],
+        ixyzf::Array{Int,1}=[0, 0, 0],
+    )
+        neighbor = Array{AMRBranch,2}(undef, 0, 0)
+        child = Array{AMRBranch,3}(undef, 0, 0, 0)
+
+        new(level, id, branch_index, leaf_index, leaf, neighbor, child, parent, parent_slot, ixyzf)
+    end
 end
 
 
@@ -34,6 +56,9 @@ function amr_initialize(
     always_amr_tree::Bool,
     nr_branches_max::Int=0,
 )
+    amr_leaf_index_free_index = 1
+    amr_branch_index_free_index = 1
+
     if level_max > 0
         amr_tree_present = true
     else
@@ -124,16 +149,10 @@ function amr_initialize(
             amr_nrbranches_max = nr_branches_max
             amr_index_to_branch = Array{AMRBranchLink}(undef, nr_branches_max)
             amr_index_to_leaf = Array{AMRBranchLink}(undef, nr_branches_max)
-            amr_branch_index_holes = zeros(
-                Int,
-                nr_branches_max,
-            )
-            amr_leaf_index_holes = zeros(
-                Int,
-                nr_branches_max,
-            )
-            amr_branchindex_nrholes = 0
-            amr_leafindex_nrholes = 0
+            amr_branch_index_holes = zeros(Int, nr_branches_max)
+            amr_leaf_index_holes = zeros(Int, nr_branches_max)
+            amr_branch_index_nrholes = 0
+            amr_leaf_index_nrholes = 0
             if nr_leaves_max != 0
                 if nr_leaves_max > nr_branches_max
                     throw(ArgumentError("Cannot have more leaves than branches"))
@@ -278,23 +297,24 @@ function amr_initialize(
             end
             for ix = 1:nnx
                 amr_finegrid_xc[ix, 1, ilevel+1] = 0.5 * (
-                    amr_finegrid_xi[2*ix-1, 1, ilevel+1] + amr_finegrid_xi[2*ix, 1, ilevel+1]
+                    amr_finegrid_xi[ix, 1, ilevel+1] + amr_finegrid_xi[ix+1, 1, ilevel+1]
                 )
             end
             for iy = 1:nny
                 amr_finegrid_xc[iy, 2, ilevel+1] = 0.5 * (
-                    amr_finegrid_xi[2*iy-1, 2, ilevel+1] + amr_finegrid_xi[2*iy, 2, ilevel+1]
+                    amr_finegrid_xi[iy, 2, ilevel+1] + amr_finegrid_xi[iy+1, 2, ilevel+1]
                 )
             end
             for iz = 1:nnz
                 amr_finegrid_xc[iz, 3, ilevel+1] = 0.5 * (
-                    amr_finegrid_xi[2*iz-1, 3, ilevel+1] + amr_finegrid_xi[2*iz, 3, ilevel+1]
+                    amr_finegrid_xi[iz, 3, ilevel+1] + amr_finegrid_xi[iz+1, 3, ilevel+1]
                 )
             end
         end
     end
 
-
+    a = AMRBranch(0, 0)
+    b = Nothing
     if amr_tree_present
         slot = Array{Int,1}(undef, 3)
         if fill_base_grid == 1
@@ -304,7 +324,18 @@ function amr_initialize(
                         slot[1] = ix
                         slot[2] = iy
                         slot[3] = iz
-                        amr_branch_construct(slot)
+                        a = amr_branch_construct(
+                            a,
+                            Nothing,
+                            slot,
+                            amr_nrleaves,
+                            amr_nrbranches,
+                            amr_last_branch_id,
+                            amr_xyzdim,
+                            amr_branch_index_nrholes,
+                            amr_leaf_index_free_index,
+                            amr_branch_index_free_index,
+                        )
                     end
                 end
             end
@@ -316,12 +347,16 @@ end
 
 
 function amr_branch_construct(
-    a::AMRBranch,
-    b::AMRBranch,
+    a::Union{AMRBranch,Nothing},
+    b::Union{AMRBranch,Nothing},
     slot::Array{Int,1},
     amr_nrleaves::Int,
     amr_nrbranches::Int,
-    amr_last_branch_id::Int
+    amr_last_branch_id::Int,
+    amr_xyzdim::Array{Int,1},
+    amr_branch_index_nrholes::Int,
+    amr_leaf_index_free_index::Int,
+    amr_branch_index_free_index::Int,
 )
     amr_nrbranches = amr_nrbranches + 1
     amr_last_branch_id = amr_last_branch_id + 1
@@ -332,21 +367,135 @@ function amr_branch_construct(
     amr_nrleaves = amr_nrleaves + 1
 
     if amr_use_index
-        index = amr_assign_branch_index()
+        index = amr_assign_branch_index(a, amr_branch_index_nrholes, amr_branch_index_free_index)
         a.branch_index = index
-        index = amr_assign_leaf_index()
+        index = amr_assign_leaf_index(a, amr_leaf_index_nrholes, amr_leaf_index_free_index)
         a.leaf_index = index
     end
 
     a.child = Nothing
 
-    a.parent = b
-    b.child[slot[1], slot[2], slot[3]] = a
-    # TODO: Well that's it. First roadblock. 
-    # We will not be using any pointer hackery in Julia.
-    # I will pass the whole fat structs around. Fuck it.
-    # God I miss C.
+    if b isa AMRBranch
+        a.parent = b
+        b.child[slot[1], slot[2], slot[3]] = a
+        a.level = b.level + 1
+        for idir = 1:3
+            if amr_xyzdim[idir] == 1
+                a.ixyzf[idir] = 2 * (b.ixyzf[idir] - 1) + slot[idir]
+            else
+                a.ixyzf[idir] = 1
+            end
+        end
+    else
+        a.parent = Nothing
+        a.level = 0
+        if (slot[1] < 1 || slot[1] > amr_grid_nx) || (slot[2] < 1 || slot[2] > amr_grid_ny) || (slot[3] < 1 || slot[3] > amr_grid_nz)
+            throw(ArgumentError("Invalid slot"))
+        end
+
+        if amr_grid_branch[slot[1], slot[2], slot[3]] isa AMRBranch
+            throw(ArgumentError("Branch already exists"))
+        end
+
+        amr_grid_branch[slot[1], slot[2], slot[3]] = a
+
+        for idir = 1:3
+            a.ixyzf[idir] = slot[idir]
+        end
+    end
+
+    for i = 1:3
+        a.parent_slot[i] = slot[i]
+    end
+
+    amr_find_and_link_all_neighbors_branch()
+
+    return a
 end
+
+function amr_assign_branch_index(
+    a::Union{AMRBranch,Nothing},
+    amr_branch_index_nrholes::Int,
+    amr_branch_index_free_index::Int,
+)
+    if !amr_use_index
+        throw(ArgumentError("Cannot assign branch index if not using index"))
+    end
+
+    if amr_branch_index_nrholes
+        if amr_branch_index_free_index > amr_nrbranches_max
+            throw(ArgumentError("Cannot allocate more holes due to lack of memory"))
+        end
+        index = amr_branch_index_free_index
+        amr_branch_index_free_index = amr_branch_index_nrholes + 1
+    else
+        index = amr_branch_index_holes[amr_branch_index_nrholes]
+        amr_branch_index_nrholes = amr_branch_index_nrholes - 1
+    end
+
+    if amr_index_to_branch[index] isa AMRBranch
+        throw(ArgumentError("Branch index already in use"))
+    end
+
+    amr_index_to_branch[index] = a
+
+end
+
+
+function amr_assign_leaf_index(
+    a::Union{AMRBranch,Nothing},
+    amr_leaf_index_nrholes::Int,
+    amr_leaf_index_free_index::Int,
+)
+    if !amr_use_index
+        throw(ArgumentError("Cannot assign leaf index if not using index"))
+    end
+
+    if amr_leaf_index_nrholes
+        if amr_leaf_index_free_index > amr_nrleaves_max
+            throw(ArgumentError("Cannot allocate more holes due to lack of memory"))
+        end
+        index = amr_leaf_index_free_index
+        amr_leaf_index_free_index = amr_leaf_index_nrholes + 1
+    else
+        index = amr_leaf_index_holes[amr_leaf_index_nrholes]
+        amr_leaf_index_nrholes = amr_leaf_index_nrholes - 1
+    end
+
+    if amr_index_to_leaf[index] isa AMRBranch
+        throw(ArgumentError("Leaf index already in use"))
+    end
+
+    amr_index_to_leaf[index] = a
+end
+
+function amr_find_and_link_all_neighbors_branch(a::Union{AMRBranch,Nothing})
+    if a.child isa AMRBranch
+        throw(ArgumentError("Cannot find neighbors for a child branch"))
+    end
+
+    for idir = 1:3
+        if amr_xyzdim[idir] > 0
+            neigh = amr_find_neighbor_branch()
+            a.neighbor[1, idir] = neigh
+            if neigh isa AMRBranch
+                amr_link_neighbors_back()
+            end
+            neigh = amr_find_neighbor_branch()
+            a.neighbor[2, idir] = neigh
+            if neigh isa AMRBranch
+                amr_link_neighbors_back()
+            end
+        end
+    end
+end
+
+function amr_find_neighbor_branch()
+end
+
+function amr_link_neighbors_back()
+end
+
 
 
 # Define a monotonically increasing xi, yi, zi
