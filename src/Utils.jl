@@ -132,3 +132,25 @@ function remap(
         end
     end
 end
+
+function hunt(
+    xx::Array{Float64,1},
+    n::Int,
+    x::Float64,
+    jlo::Int
+)
+    ascnd = xx[n] >= xx[1]
+    if (jlo <= 0 || jlo > n)
+        jlo = 0
+        jhi = n + 1
+        if (jhi - jlo) == 1
+            return
+        end
+        jm = (jhi + jlo) ÷ 2
+        if (x > xx[jm] === ascnd)
+            jlo = jm
+        else
+            jhi = jm
+        end
+    end
+end
