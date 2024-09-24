@@ -462,6 +462,40 @@
 !       particle ensembles.
 ! 
 !------------------------------------------------------------------------
+!
+! SCATTERING OFF ALIGNED NON-SPHERICAL PARTICLES
+!
+! Suppose we have particles which have a plane of symmetry (i.e. no
+! helicity) and can be aligned. Take, for instance, prolate or oblate
+! ellipsoids. If we have gravity or a magnetic field, then we can align
+! these particles with their axis of symmetry along the gravity or 
+! B-field direction. Then the scattering Mueller matrix depends on
+! three angles instead of just one. 
+!
+! We rotate the (x',y') plane such that the symmetry axis of the dust
+! particle is in the y'-z'-plane. The angle of the particle can be 
+! written as xi, such that for xi=0 the symmetry axis of the
+! particle is pointing in the y'-direction and for xi=pi/2 it is
+! pointing in the z'-direction, and for xi=pi/4 it is in the y'=z'
+! direction. The scattering angles remain theta and phi. In this 
+! case we can, unfortunately, not reduce angles through symmetries.
+! We will have to account for the full Z(xi,theta,phi)-dependence.
+! Also: We cannot assume that the matrix has the upper-right and
+! lower-left matrix elements zero.
+!
+! If we wish to include this at some point, we must embed the 
+! cross-section routine (e.g. the T-matrix code of Mishchenko)
+! into the code, because it would make no sense to precalculate
+! and store a 4-dimensional array (3 angles and 1 freq), I think.
+!
+! It is going to be difficult to implement this into the Monte
+! Carlo code, because that involves integrals over the cross
+! section. For a "last scattering method" this would, however,
+! be no problem.
+!
+! FOR NOW WE DO NOT INCLUDE THIS POSSIBILITY IN RADMC-3D
+!
+!------------------------------------------------------------------------
 """
 
 
