@@ -496,6 +496,48 @@
 ! FOR NOW WE DO NOT INCLUDE THIS POSSIBILITY IN RADMC-3D
 !
 !------------------------------------------------------------------------
+!
+! ABSORPTION AND EMISSION BY ALIGNED NON-SPHERICAL NON-HELICAL PARTICLES
+! 
+! If particles are randomly oriented and non-helical, then the thermal
+! emission and absorption are non-polarized. However, if the grains are
+! aligned (still non-helical) then the thermal emission and absorption are
+! going to be linearly polarized. Like the scattering, the absorption
+! is handled through a Mueller matrix. 
+!
+! Let us assume grains with a rotation axis and no helicity. Let us 
+! rotate the (x',y') coordinates such that the symmetry axis of the
+! grain lies in the y'-z'-plane. Let us define an angle xi such that
+! the symmetry axis of the grain is described by a vector 
+! n=(0,cos(xi),sin(xi)). The absorption-emission process is then 
+! described by:
+!
+!     (I)    ( A_1 B_nu(T) )   ( A_1    A_2     0      0   ) (I)
+!   d (Q)    ( A_2 B_nu(T) )   ( A_2    A_1     0      0   ) (Q)
+!  -- (U)  = (      0      ) - (  0      0     A_1     0   ) (U)
+!  dt (V)    (      0      )   (  0      0      0     A_1  ) (V)
+! 
+! where 
+!
+!  A_1 = 0.5 * ( A_hori + A_vert )
+!  A_2 = 0.5 * ( A_hori - A_vert )
+!
+! with 
+!
+!  A_hori = A_hori(xi,nu) = rho * kappa_hori(xi,nu)
+!  A_vert = A_vert(xi,nu) = rho * kappa_vert(xi,nu)
+!
+! The A_hori and A_vert are the absorption coefficients for horizontally
+! polarized light (along the x'-axis) and vertically polarized light
+! (along the y'-axis). 
+!
+! We need a table of kappa_hori and kappa_vert for a set of angles
+! xi (the angle of the grain symmetry axis with the y'-axis) and
+! frequencies nu. 
+!
+! As of version 0.41 this is now included (see below).
+!
+!------------------------------------------------------------------------
 """
 
 
