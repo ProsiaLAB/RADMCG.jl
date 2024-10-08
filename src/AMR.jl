@@ -1,4 +1,4 @@
-"""
+#=
 ==========================================================================
                     Adaptive Mesh Refinement Module
 
@@ -25,7 +25,7 @@
 
 --------------------------------------------------------------------------
  BASE GRID AND TREE STRUCTURED REFINEMENTS
- 
+
  The base grid (forest) with possibly hierarchically structured 
  refinements (tree). The end-members of the branches are called leafs.
  The leafs are the "true" cells! Each symbol (o or *) is a branch 
@@ -73,7 +73,7 @@
  Author: C.P. Dullemond
  Date:   07.09.07
 ==========================================================================
-"""
+=#
 
 include("Constants.jl")
 include("Utils.jl")

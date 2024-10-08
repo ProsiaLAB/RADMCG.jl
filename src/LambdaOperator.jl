@@ -1,5 +1,5 @@
-"""
-!========================================================================
+#=
+=======================================================================
 !                       LAMBDA OPERATOR MODULE
 !
 ! For the Lambda Iteration scheme (and its sister, the Accelerated
@@ -16,5 +16,5 @@
 ! operator you use, you get less noise. Finally, one can use the
 ! Accelerated Lambda Iteration scheme to speed up convergence of the
 ! Lambda Iteration.
-!========================================================================
-"""
+======================================================================
+=#

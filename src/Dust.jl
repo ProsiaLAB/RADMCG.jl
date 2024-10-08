@@ -1,4 +1,4 @@
-"""
+#=
 =======================================================================
                          DUST OPACITY MODULE
 
@@ -6,4 +6,4 @@
  the author got from Alex de Koter (University of Amsterdam) who presumably
  (?)  got the Mie routine from Joop Hovenier (?).
 =======================================================================
-"""
+=#

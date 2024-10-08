@@ -1,34 +1,25 @@
-mutable struct AMRBranch
-    level::Int
-    id::Int
-    branch_index::Int
-    leaf_index::Int
-    leaf::Bool
-    neighbor::Array{AMRBranch,2}
-    child::Array{AMRBranch,3}
-    parent::Union{AMRBranch,Nothing}
-    parent_slot::Array{Int,1}
-    ixyzf::Array{Int,1}
+using Random, Base.Threads
 
-    # Inner constructor with default values
-    function AMRBranch(level::Int, id::Int; branch_index::Int=0, leaf_index::Int=0, leaf::Bool=false,
-        parent::Union{AMRBranch,Nothing}=nothing, parent_slot::Array{Int,1}=Int[],
-        ixyzf::Array{Int,1}=Int[])
+# Parallel random number generation
+n = 10000
+random_nums = Vector{Float64}(undef, n)
 
-        # Creating arrays with dimensions based on your specific use-case
-        neighbor = Array{AMRBranch,2}(undef, 0, 0)  # Replace with correct dimensions
-        child = Array{AMRBranch,3}(undef, 0, 0, 0)  # Replace with correct dimensions
-
-        # Return an instance
-        new(level, id, branch_index, leaf_index, leaf, neighbor, child, parent, parent_slot, ixyzf)
-    end
+@threads for i in 1:n
+    random_nums[i] = rand()
 end
 
+println(random_nums)
 
-# Creating an AMRBranch instance with default values for optional fields
-branch = AMRBranch(1, 42)
+# using Random, Base.Threads
 
-# Creating an AMRBranch instance with custom values for optional fields
-parent_slot = [1, 2, 3]
-ixyzf = [0, 1, 0]
-branch_with_custom_values = AMRBranch(2, 101; branch_index=5, leaf=true, parent_slot=parent_slot, ixyzf=ixyzf)
+# n = 5
+# random_nums = Vector{Float64}(undef, n)
+
+# # Seed each thread's RNG
+# @threads for i in 1:n
+#     rng = MersenneTwister(i)  # Seeded RNG per thread
+#     random_nums[i] = rand(rng)
+# end
+
+# println(random_nums)
+

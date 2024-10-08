@@ -1,4 +1,4 @@
-"""
+#=
 ==========================================================================
            Module for tracking straight line through AMR grid
               and for other formal radiative transfer stuff
@@ -44,4 +44,4 @@
        This is default in the AMR module, but not required in the AMR
        module. But it is strictly required here!
 --------------------------------------------------------------------------
-"""
+=#
