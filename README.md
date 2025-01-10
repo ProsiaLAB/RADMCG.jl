@@ -1,2 +1,2 @@
-# RADMC3D.jl
+# RADMCG.jl
 Implementation of RADMC-3D in the Julia programming language on CUDA GPUs.
