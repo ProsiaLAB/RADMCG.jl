@@ -27,3 +27,5 @@ Manifest.toml
 # rough
 *.c
 *.out
+
+.DS_Store
