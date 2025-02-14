@@ -1,4 +1,4 @@
-# RADMCG.jl
+# prosia
 
 Implementation of RADMC-3D in the Rust programming language on GPUs.
 
